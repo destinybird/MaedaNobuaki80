@@ -16,18 +16,12 @@ license: Apache License 2.0
 
 ### 棋盘坐标出现频次热力图
 
-（统计所有题目中黑子、白子及选项坐标的出现次数）
-
 ![棋盘热力图](chart_board_heatmap.png)
 
 ### 黑子数量分布
 
-（含均值线）
-
 ![黑子数量分布](chart_black_stone_dist.png)
 
 ### 白子数量分布
-
-（含均值线）
 
 ![白子数量分布](chart_white_stone_dist.png)
