@@ -9,7 +9,7 @@ language:
 
 2026年8月13日（DeepSeek-V4-Pro）、8月15日（DeepSeek-V4-Flash）、8月21日（DeepSeek-V4-Flash-Vision-Exp）与 8月23日（LoGos-7B），对全部 80 道题进行完整评测（Pro/Flash/Vision 均为 10 批并发思考模式；LoGos-7B 为本地 vLLM 推理，与 Vision 同格式 prompt），结果令人忍俊不禁。
 
-![正确率对比](chart_accuracy.png)
+![正确率对比](images/chart_accuracy.png)
 
 | 模型 | 答对 | 答错或无答案 | 正确率 |
 | --- | --- | --- | --- |
@@ -26,16 +26,16 @@ language:
 
 ### 测试脚本
 
-- `test_deepseek.py`：单线程测试脚本，支持思考模式（`--think`）、指定题号（`--id`）、分批（`--start` / `--limit`）
-- `test_deepseek_parallel.py`：并发测试脚本，默认 10 批并发，带实时进度面板，支持 `--ids` 只测指定题号；每条结果含 `usage`（token 用量）
-- `test_deepseek_vision.py`：视觉模型测试脚本（`deepseek-v4-flash-vision-exp`），把每题棋盘图（`boards/`）作为图片输入，10 批并发，答案要求以 `<box>X</box>` 结尾便于提取
-- `test_logos.py`：LoGos-7B 本地测试脚本（vLLM 推理，prompt 与 Vision 版一致，`<box>` 格式 + `</box>` 提前截断）
+- `tests/scripts/test_deepseek.py`：单线程测试脚本，支持思考模式（`--think`）、指定题号（`--id`）、分批（`--start` / `--limit`）
+- `tests/scripts/test_deepseek_parallel.py`：并发测试脚本，默认 10 批并发，带实时进度面板，支持 `--ids` 只测指定题号；每条结果含 `usage`（token 用量）
+- `tests/scripts/test_deepseek_vision.py`：视觉模型测试脚本（`deepseek-v4-flash-vision-exp`），把每题棋盘图（`boards/`）作为图片输入，10 批并发，答案要求以 `<box>X</box>` 结尾便于提取
+- `tests/scripts/test_logos.py`：LoGos-7B 本地测试脚本（vLLM 推理，prompt 与 Vision 版一致，`<box>` 格式 + `</box>` 提前截断）
 
 ### Prompt 构造说明
 
 本测试集有两个版本的 prompt：纯文字版与带图片版，以第 1 题为例。
 
-#### 纯文字版（test_deepseek.py 的 build_user_prompt）
+#### 纯文字版（tests/scripts/test_deepseek.py 的 build_user_prompt）
 
 用户 prompt 由四部分拼接而成：
 
@@ -50,7 +50,7 @@ language:
 这是前田陈尔九段的《痛快》一书中的题目，黑先做活，要求净活，不允许劫活。十九路棋盘，从左到右A~T（不含I），从上到下1~19。黑子：B3 D2 D3 E3 F3 G1 G2 G3\n白子：B4 C2 C3 D4 E2 E4 F1 F4 G4 H2 H4 J3\n\n以下选项中，能成为正解的黑方第一手的坐标的是？\n\n选项：\n  A：F2\n  B：D1\n  C：C1\n  D：E1\n  E：以上选项都不对
 ```
 
-#### 带图片版（test_deepseek_vision.py 的 build_vision_messages）
+#### 带图片版（tests/scripts/test_deepseek_vision.py 的 build_vision_messages）
 
 棋盘图（boards/board_001.png 等）以 base64 内联在 content 的 image_url 块中；文本部分为：题目要求（加"单项选择"）+ 问句 + 选项 + 答案格式指令：
 
@@ -73,39 +73,39 @@ language:
 
 ### 测试结果
 
-- `results/pro_all_20260813_165328.jsonl`：DeepSeek-V4-Pro 80 题逐题完整记录（含 prompt、思考过程、最终回复、耗时）
-- `results/flash_all_20260815_155525.jsonl`：DeepSeek-V4-Flash 80 题逐题完整记录（含 prompt、思考过程、最终回复、token 用量）
-- `results/vision_all_20260821_231215.jsonl`：DeepSeek-V4-Flash-Vision-Exp 80 题逐题完整记录（含棋盘图片、思考过程、`<box>` 答案）
-- `results/logos_all_20260823_001656.jsonl`：LoGos-7B 80 题逐题记录（含 category 标注：box / repeat / box_invalid；已核查修正）
+- `tests/results/pro/pro_all_20260813_165328.jsonl`：DeepSeek-V4-Pro 80 题逐题完整记录（含 prompt、思考过程、最终回复、耗时）
+- `tests/results/flash/flash_all_20260815_155525.jsonl`：DeepSeek-V4-Flash 80 题逐题完整记录（含 prompt、思考过程、最终回复、token 用量）
+- `tests/results/vision/vision_all_20260821_231215.jsonl`：DeepSeek-V4-Flash-Vision-Exp 80 题逐题完整记录（含棋盘图片、思考过程、`<box>` 答案）
+- `tests/results/logos/logos_all_20260823_001656.jsonl`：LoGos-7B 80 题逐题记录（含 category 标注：box / repeat / box_invalid；已核查修正）
 
 ### 核对说明
 
-- DeepSeek-V4-Pro：id=3、id=63 提取错误（模型正确答 E 被错误提取为 D），修正后正确数 16→18，见 `提取核对说明_pro.txt`
-- DeepSeek-V4-Flash：id=3、id=12 提取问题，修正不影响正确数，见 `提取核对说明.txt`
+- DeepSeek-V4-Pro：id=3、id=63 提取错误（模型正确答 E 被错误提取为 D），修正后正确数 16→18，见 `tests/results/pro/提取核对说明_pro.txt`
+- DeepSeek-V4-Flash：id=3、id=12 提取问题，修正不影响正确数，见 `tests/results/flash/提取核对说明.txt`
 - DeepSeek-V4-Flash-Vision-Exp：答案统一由 `<box>X</box>` 标记提取
-- LoGos-7B：答案统一由 `<box>X</box>` 标记提取，核查与修正见 `提取核对说明_logos.txt`
+- LoGos-7B：答案统一由 `<box>X</box>` 标记提取，核查与修正见 `tests/results/logos/提取核对说明_logos.txt`
 
 ## 统计图
 
 ### 正解选项分布（A~E）
 
-![正解选项分布](chart_answer_dist.png)
+![正解选项分布](images/chart_answer_dist.png)
 
 ### 题型分布（净杀 / 劫杀 / 净活 / 劫活 / 其他）
 
-![题型分布](chart_category_dist.png)
+![题型分布](images/chart_category_dist.png)
 
 ### 棋盘坐标出现频次热力图
 
-![棋盘热力图](chart_board_heatmap.png)
+![棋盘热力图](images/chart_board_heatmap.png)
 
 ### 黑子数量分布
 
-![黑子数量分布](chart_black_stone_dist.png)
+![黑子数量分布](images/chart_black_stone_dist.png)
 
 ### 白子数量分布
 
-![白子数量分布](chart_white_stone_dist.png)
+![白子数量分布](images/chart_white_stone_dist.png)
 
 ## 各模型答题明细
 
