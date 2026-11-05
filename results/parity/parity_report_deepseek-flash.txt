@@ -1,0 +1,137 @@
+MaedaNobuaki80 · Harbor 适配 parity 报告
+==============================================================================
+生成时间：2026-11-05 10:06:37（北京时间，取自系统时间）
+模型：DeepSeek-V4.1-Flash（两侧调用的是同一个模型，只是参数名不同）
+参数（两侧完全一致）：thinking 开启，reasoning_effort=high，max_tokens=131072，
+                    temperature 不设置，每题 1 次采样
+题面：80 题逐字一致（程序比对 80/80）
+判定（两侧完全一致）：只认回复中最后一个 <box>X</box>，取其中字母，不做正文兜底；
+                    与 correctAnswer 相同记 1，否则记 0（含空回复、超长截断）
+
+一、两侧各 3 次全量
+------------------------------------------------------------------------------
+原生侧（test_deepseek_unified.py，80 并发，直连 API，无工具）
+  第 1 次：17/80 = 21.25%    无 box/空回复 3 题 [12, 21, 59]    调用失败补跑后为 0 题
+  第 2 次：16/80 = 20.00%    无 box/空回复 0 题     调用失败补跑后为 0 题
+  第 3 次：19/80 = 23.75%    无 box/空回复 3 题 [12, 72, 74]    调用失败补跑后为 0 题
+
+Harbor 侧（harbor run -n 80，自定义无工具 agent，同一 prompt，同一参数）
+  第 1 次：19/80 = 23.75%    trial 80 个，0 异常
+  第 2 次：15/80 = 18.75%    trial 80 个，0 异常
+  第 3 次：20/80 = 25.00%    trial 80 个，0 异常
+
+二、parity 判定
+------------------------------------------------------------------------------
+原生侧：mean 21.67%  ± SEM 1.10  （范围 20.00% – 23.75%）
+Harbor：mean 22.50%  ± SEM 1.91  （范围 18.75% – 25.00%）
+
+判据（harbor ADAPTER_CONTRIBUTING 第 331-337 行）：
+  max(A) >= min(B) 且 max(B) >= min(A)
+  max(原生)=23.75  >= min(harbor)=18.75  → 满足
+  max(harbor)=25.00  >= min(原生)=20.00  → 满足
+  结论：区间重叠，通过
+
+三、逐题对照（3 次全量，每题两侧各 3 个结果）
+------------------------------------------------------------------------------
+列：题号 / 正解 / 原生 3 次 / harbor 3 次 / 说明
+   1  正解 C   原生 C/C/A (2/3)   harbor D/A/C (1/3)   两侧不同
+   2  正解 E   原生 C/C/A (0/3)   harbor C/C/C (0/3)   两侧不同
+   3  正解 E   原生 C/D/C (0/3)   harbor A/D/B (0/3)   两侧不同
+   4  正解 A   原生 B/B/A (1/3)   harbor D/D/D (0/3)   两侧不同
+   5  正解 C   原生 B/C/A (1/3)   harbor A/C/B (1/3)   两侧不同
+   6  正解 D   原生 B/D/D (2/3)   harbor B/B/D (1/3)   两侧不同
+   7  正解 D   原生 A/A/A (0/3)   harbor D/D/D (3/3)   两侧不同
+   8  正解 C   原生 C/D/C (2/3)   harbor D/D/A (0/3)   两侧不同
+   9  正解 C   原生 B/B/B (0/3)   harbor B/D/A (0/3)   两侧不同
+  10  正解 D   原生 C/C/C (0/3)   harbor B/-/C (0/3)   两侧不同
+  11  正解 D   原生 D/D/A (2/3)   harbor B/D/D (2/3)   两侧不同
+  12  正解 E   原生 -/D/- (0/3)   harbor A/C/- (0/3)   两侧不同
+  13  正解 A   原生 A/A/A (3/3)   harbor A/B/A (2/3)   两侧不同
+  14  正解 C   原生 A/B/A (0/3)   harbor B/A/B (0/3)   两侧不同
+  15  正解 E   原生 C/C/A (0/3)   harbor D/B/B (0/3)   两侧不同
+  16  正解 A   原生 C/D/D (0/3)   harbor D/D/D (0/3)   两侧不同
+  17  正解 E   原生 B/B/B (0/3)   harbor C/B/- (0/3)   两侧不同
+  18  正解 B   原生 B/B/D (2/3)   harbor D/C/C (0/3)   两侧不同
+  19  正解 C   原生 A/A/C (1/3)   harbor C/B/C (2/3)   两侧不同
+  20  正解 B   原生 D/A/C (0/3)   harbor A/C/D (0/3)   两侧不同
+  21  正解 D   原生 -/D/A (1/3)   harbor D/D/D (3/3)   两侧不同
+  22  正解 B   原生 A/C/B (1/3)   harbor B/A/A (1/3)   两侧不同
+  23  正解 A   原生 D/A/B (1/3)   harbor C/D/B (0/3)   两侧不同
+  24  正解 A   原生 D/A/A (2/3)   harbor D/B/A (1/3)   两侧不同
+  25  正解 C   原生 A/D/A (0/3)   harbor D/A/A (0/3)   两侧不同
+  26  正解 D   原生 A/B/D (1/3)   harbor C/C/A (0/3)   两侧不同
+  27  正解 E   原生 C/B/D (0/3)   harbor A/A/B (0/3)   两侧不同
+  28  正解 D   原生 C/C/D (1/3)   harbor D/D/D (3/3)   两侧不同
+  29  正解 E   原生 B/D/A (0/3)   harbor B/D/B (0/3)   两侧不同
+  30  正解 B   原生 B/B/A (2/3)   harbor B/D/B (2/3)   两侧不同
+  31  正解 B   原生 A/B/D (1/3)   harbor D/C/D (0/3)   两侧不同
+  32  正解 D   原生 D/B/D (2/3)   harbor -/D/- (1/3)   两侧不同
+  33  正解 A   原生 A/A/A (3/3)   harbor B/B/B (0/3)   两侧不同
+  34  正解 A   原生 C/E/B (0/3)   harbor B/B/C (0/3)   两侧不同
+  35  正解 A   原生 B/D/D (0/3)   harbor A/D/A (2/3)   两侧不同
+  36  正解 C   原生 B/D/B (0/3)   harbor B/C/B (1/3)   两侧不同
+  37  正解 B   原生 B/A/A (1/3)   harbor B/B/B (3/3)   两侧不同
+  38  正解 C   原生 B/B/C (1/3)   harbor A/C/C (2/3)   两侧不同
+  39  正解 D   原生 D/C/B (1/3)   harbor D/A/A (1/3)   两侧不同
+  40  正解 A   原生 A/B/D (1/3)   harbor A/A/B (2/3)   两侧不同
+  41  正解 C   原生 D/B/D (0/3)   harbor D/D/A (0/3)   两侧不同
+  42  正解 D   原生 C/A/A (0/3)   harbor B/C/D (1/3)   两侧不同
+  43  正解 E   原生 A/E/B (1/3)   harbor C/A/A (0/3)   两侧不同
+  44  正解 B   原生 A/A/A (0/3)   harbor A/A/A (0/3)   
+  45  正解 D   原生 A/D/A (1/3)   harbor D/B/B (1/3)   两侧不同
+  46  正解 C   原生 A/B/B (0/3)   harbor C/B/C (2/3)   两侧不同
+  47  正解 D   原生 A/A/B (0/3)   harbor D/A/A (1/3)   两侧不同
+  48  正解 A   原生 D/B/A (1/3)   harbor A/A/A (3/3)   两侧不同
+  49  正解 C   原生 B/B/B (0/3)   harbor A/A/A (0/3)   两侧不同
+  50  正解 B   原生 B/A/A (1/3)   harbor A/A/A (0/3)   两侧不同
+  51  正解 B   原生 D/D/B (1/3)   harbor A/A/D (0/3)   两侧不同
+  52  正解 B   原生 C/C/D (0/3)   harbor -/E/D (0/3)   两侧不同
+  53  正解 E   原生 A/D/D (0/3)   harbor C/D/A (0/3)   两侧不同
+  54  正解 A   原生 A/B/A (2/3)   harbor A/A/C (2/3)   两侧不同
+  55  正解 D   原生 A/B/A (0/3)   harbor A/B/A (0/3)   
+  56  正解 C   原生 B/B/C (1/3)   harbor B/D/B (0/3)   两侧不同
+  57  正解 E   原生 B/D/C (0/3)   harbor A/C/A (0/3)   两侧不同
+  58  正解 A   原生 B/B/A (1/3)   harbor B/B/A (1/3)   
+  59  正解 B   原生 -/C/E (0/3)   harbor A/A/B (1/3)   两侧不同
+  60  正解 B   原生 B/B/D (2/3)   harbor B/B/A (2/3)   两侧不同
+  61  正解 D   原生 A/C/C (0/3)   harbor D/C/B (1/3)   两侧不同
+  62  正解 D   原生 C/C/A (0/3)   harbor C/D/C (1/3)   两侧不同
+  63  正解 E   原生 A/A/C (0/3)   harbor C/C/A (0/3)   两侧不同
+  64  正解 E   原生 C/C/C (0/3)   harbor B/B/A (0/3)   两侧不同
+  65  正解 E   原生 D/B/A (0/3)   harbor A/D/C (0/3)   两侧不同
+  66  正解 C   原生 D/B/B (0/3)   harbor B/A/B (0/3)   两侧不同
+  67  正解 A   原生 C/C/A (1/3)   harbor D/D/D (0/3)   两侧不同
+  68  正解 B   原生 B/A/C (1/3)   harbor A/C/A (0/3)   两侧不同
+  69  正解 A   原生 B/B/B (0/3)   harbor B/B/B (0/3)   
+  70  正解 E   原生 B/A/C (0/3)   harbor D/B/- (0/3)   两侧不同
+  71  正解 C   原生 C/B/D (1/3)   harbor D/D/B (0/3)   两侧不同
+  72  正解 D   原生 A/A/- (0/3)   harbor A/A/C (0/3)   两侧不同
+  73  正解 E   原生 A/A/A (0/3)   harbor D/A/E (1/3)   两侧不同
+  74  正解 C   原生 C/C/- (2/3)   harbor D/D/C (1/3)   两侧不同
+  75  正解 A   原生 C/C/B (0/3)   harbor B/D/B (0/3)   两侧不同
+  76  正解 B   原生 D/C/D (0/3)   harbor D/D/C (0/3)   两侧不同
+  77  正解 D   原生 A/A/D (1/3)   harbor D/D/C (2/3)   两侧不同
+  78  正解 C   原生 A/A/A (0/3)   harbor A/D/- (0/3)   两侧不同
+  79  正解 D   原生 B/C/C (0/3)   harbor B/C/- (0/3)   两侧不同
+  80  正解 E   原生 D/B/C (0/3)   harbor D/B/A (0/3)   两侧不同
+
+三次全量中，两侧答案完全相同的题：4/80；存在差异的题：76/80
+
+五、原始文件
+------------------------------------------------------------------------------
+  原生第 1 次：results_unified/flash_all_20261105_083143.jsonl
+  原生第 2 次：results_unified/flash_all_20261105_084909.jsonl
+  原生第 3 次：results_unified/flash_all_20261105_092711.jsonl
+  原生补跑    ：results_unified/flash_all_20261105_094400.jsonl（id 30/47/54/59，替换第 3 次里的失败项）
+  Harbor 第 1 次：_harbor_jobs_demo/2026-11-05__07-16-22_80题_deepseek-flash
+  Harbor 第 2 次：_harbor_jobs_demo/2026-11-05__09-05-52_80题_deepseek-flash
+  Harbor 第 3 次：_harbor_jobs_demo/2026-11-05__09-43-40_80题_deepseek-flash
+
+六、答案字母分布（两侧各 3 次全量合计，各 240 个答案）
+------------------------------------------------------------------------------
+                A       B       C       D       E  空/无box
+  原生         72      63      51      45       3       6
+  harbor       66      59      40      64       2       9
+
+  80 题中正解为 E 的有 16 题（20%），而两侧各 3 次全量合计 240 个答案里，
+  模型选 E 的次数是：原生 3 次、harbor 2 次。
